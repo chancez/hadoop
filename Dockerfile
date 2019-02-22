@@ -48,7 +48,7 @@ ENV CMAKE_C_COMPILER=gcc CMAKE_CXX_COMPILER=g++
 WORKDIR /build
 RUN scl enable rh-maven33 'mvn -B -e -Dtest=false -DskipTests -Dmaven.javadoc.skip=true clean package -Pdist,native -Dtar'
 
-FROM centos:7
+FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
 
 RUN yum install --setopt=skip_missing_names_on_install=False -y \
         epel-release \
