@@ -2,21 +2,31 @@ FROM centos:7 as build
 
 RUN yum -y update && yum clean all
 
-# newer maven
-RUN yum -y install --setopt=skip_missing_names_on_install=False centos-release-scl
 # cmake3
 RUN yum -y install --setopt=skip_missing_names_on_install=False epel-release
 
 RUN yum -y install --setopt=skip_missing_names_on_install=False \
     java-11-openjdk-devel \
     java-11-openjdk \
-    rh-maven33 \
     protobuf protobuf-compiler \
     patch \
     lzo-devel zlib-devel gcc gcc-c++ make autoconf automake libtool openssl-devel fuse-devel \
     cmake3 \
     && yum clean all \
     && rm -rf /var/cache/yum
+
+
+#Install maven
+# set installed Maven version you can easily change it later
+ENV MAVEN_VERSION 3.6.0
+
+RUN set -x; curl -sSL http://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz \
+    | tar xzf - -C /usr/share \
+    && mv /usr/share/apache-maven-$MAVEN_VERSION /usr/share/maven \
+    && sed -i 's|${CLASSWORLDS_LAUNCHER} "$@"|${CLASSWORLDS_LAUNCHER} -B "$@"|g' /usr/share/maven/bin/mvn \
+    && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+
+RUN echo "export M2_HOME=/usr/share/maven" >> /etc/profile
 
 RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 
@@ -46,7 +56,7 @@ COPY README.txt /build/README.txt
 ENV CMAKE_C_COMPILER=gcc CMAKE_CXX_COMPILER=g++
 
 WORKDIR /build
-RUN scl enable rh-maven33 'mvn -B -e -Dtest=false -DskipTests -Dmaven.javadoc.skip=true clean package -Pdist,native -Dtar'
+RUN mvn -B -e -Dtest=false -DskipTests -Dmaven.javadoc.skip=true clean package -Pdist,native -Dtar
 
 FROM centos:7
 
